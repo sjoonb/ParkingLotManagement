@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <curses.h> // clear 를 위한 library
+#include <curses.h> // system clear
 #include <stdlib.h>
 
 enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT};
@@ -23,6 +23,11 @@ int main() {
 	
 	// TODO - Check first implementation
 	// if ~~ 파일이 존재하는가? 존재하지 않는가?
+	FILE *fp = fopen("a.txt", "r");
+	if(fp == NULL) {
+		printf("No file\n");
+	}
+	
 	// TODO - if not, init_space()
 	// TODO - if true, 파일에서 읽어와서 구조체로 형성하기, 주차장 크기도 가져오기.
 	
