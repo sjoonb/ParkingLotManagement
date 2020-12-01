@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h> //strcpy, strcmp
 #include <unistd.h> //access
+#include <time.h>
 
 enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT};
 
@@ -18,13 +19,13 @@ typedef struct car car_t;
 // Enum 활용해서 기능 선택 직관화
 
 void init_space(int* pspace, int* pnew);
-void init_cars();
+void init_cars(int new);
 void init_rate();
 car_t* entering(car_t* main_list_head);
 void exiting();
 void status(car_t* list_head);
 void auto_mode();
-void save_and_quit(int new, int space);
+void save_and_quit(int new, int space, car_t* list_head);
 
 void reset(); // 초기화 함수는 숨겨놀까? password 까지 구현?
 
@@ -46,7 +47,7 @@ int main() {
 	init_space(&space, &new);
 
 	// 그 사이즈에 맞게 struct car 연결리스트를 형성해야 한다.
-	init_cars();
+	init_cars(new);
 
 	init_rate();
 	
@@ -78,7 +79,7 @@ int main() {
 		case AUTO:
 			break;
 		case QUIT:
-			save_and_quit(new, space);
+			save_and_quit(new, space, main_list_head);
 			break;
 		default:
 			printf("nope\n");
@@ -105,7 +106,7 @@ void init_space(int* pspace, int* pnew) {
 	if(access("space.txt", F_OK) == 0) {
 		// TODO - 자동차 랜덤 생성할지 묻는다. 아니면 그냥 빈칸으로 냄겨 둔다.
 		fp = fopen("space.txt", "r");
-		fscanf(fp,"%d\n", pspace); 
+		fscanf(fp, "%d\n", pspace); 
 
 		fclose(fp);
 
@@ -129,10 +130,16 @@ void init_space(int* pspace, int* pnew) {
 }
 
 
-void init_cars() {
+void init_cars(int new) {
+	int a;
+	FILE* fp = NULL;
 	
-	// TODO - new file 이라면, 랜덤 생성 할껀지 묻고
-	// 아니라면, 
+	if(new){
+	// TODO - new file 이라면, 랜덤 생성 할껀지 묻고 pass
+	} else {
+		printf("not new\n");
+		scanf("%d", &a);
+	}
 
 
 }
@@ -143,10 +150,14 @@ void init_rate() {
 
 
 car_t* entering(car_t* main_list_head) {	
+	time_t current;
+	time(&current);
+
+	struct tm *t = localtime(&current);
+
 	char tmp_num[10];
 	char tmp_size[10];
 	car_t* new_node;
-	//car_t* list_head = NULL;
 	car_t* next_p;
 	car_t* prev_p;
 
@@ -160,6 +171,7 @@ car_t* entering(car_t* main_list_head) {
 	new_node = (car_t*) malloc (sizeof(car_t));
 	strcpy(new_node->num, tmp_num);
 	strcpy(new_node->size, tmp_size);
+	new_node->time = t->tm_hour*60 + t->tm_min;
 
 	next_p = main_list_head;
 	prev_p = NULL;
@@ -198,7 +210,7 @@ void exiting() {
 void status(car_t* list_head) {
 	
 	while(list_head != NULL){
-		printf("%s, %s\n", list_head->num, list_head->size);
+		printf("%s, %s, %d:%d\n", list_head->num, list_head->size, list_head->time/60, list_head->time%60);
 		list_head = list_head->next;
 	}
 	printf("\n");
@@ -213,12 +225,24 @@ void auto_mode() {
 	// TODO - 랜덤하게 exiting, entering 실행
 }
 
-void save_and_quit(int new, int space){
+void save_and_quit(int new, int space, car_t* list_head){
+	FILE* fp = NULL; 
+	
 	if(new){
-		FILE* fp = fopen("space.txt", "w");
+		fp = fopen("space.txt", "w");
 		fprintf(fp, "%d", space);
 		fclose(fp);
+	} 
+
+	fp = fopen("car.txt", "w");
+
+	while(list_head != NULL){
+		fprintf(fp, "%s %s %d\n", list_head->num, list_head->size, list_head->time);
+		list_head = list_head->next;
 	}
+	
+	fclose(fp);
+	
 
 	exit(0);
 }
