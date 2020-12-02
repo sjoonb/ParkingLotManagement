@@ -7,6 +7,7 @@
 
 // Enum 활용해서 기능 선택 직관화
 enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT, RESET};
+enum ratetype {DEFAULT, PLUS, MAX, TURN};
 
 struct car {
 	char num[10];
@@ -20,15 +21,18 @@ typedef struct car car_t;
 
 void init_space(int* pspace, int* pnew);
 car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car);
-void init_rate();
+int init_money(int new);
+void init_rate(int tmp_sm[], int tmp_l[]);
 car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space);
 car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car);
-car_t* exit_info(car_t* main_list_head, int* pnum_of_car);
-car_t* exiting(car_t* main_list_head, char tmp_nump[], int* pnum_of_car);
+car_t* exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]);
+car_t* exiting(car_t* main_list_head, char tmp_nump[], int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]);
+void get_money(car_t* node, int tmp_sm[], int tmp_l[], int* pmoney);
+void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney);
 void status(car_t* list_head);
-void auto_mode();
-void save_and_quit(int new, int space, car_t* list_head);
-void reset(); // 초기화 함수는 숨겨놀까? password 까지 구현?
+void auto_mode(); // 미구현
+void save_and_quit(int new, int space, int money, car_t* list_head);
+void reset(); 
 
 int main() {
 	system("clear");
@@ -38,22 +42,27 @@ int main() {
 	int loop;
 	int new = 0;
 	char ch;
-
-	// 우선 4자리수 차량으로 하고, 시간이 남는다면 가나다라 추가하자
+	
+	// 요금을 위한 변수
+	int sm[4] = {0}; // small, mid size
+	int l[4] = {0}; // large size
 	
 	car_t* main_list_head = NULL;
-	int space; // 주차장 크기
-	int num_of_car;
-	// TODO - 차량 수 체크, 만차시 만차라고 하고 다시 못나오게
-	int car_count; // 차량 수
-	// 먼저 프로그램이 주차장 크기, 차량, 요금표를 받아와야 한다. 처음 만들어 진건지 체크는 그 안에서 이루어 지면 된다. 
+	int space = 0; // 주차장 크기
+	int num_of_car = 0;
+	int money = 0;
+
 	// 우선 주차장 사이즈를 가져오고,
 	init_space(&space, &new);
 
 	// 그 사이즈에 맞게 struct car 연결리스트를 형성해야 한다.
 	main_list_head = init_cars(new, main_list_head, &num_of_car);
+	
+	money = init_money(new);
 
-	init_rate();
+	// 그 후 요금을 가져온다.
+	init_rate(sm, l);
+	
 	
 	// TODO - if true, 파일에서 읽어와서 구조체로 형성하기, 주차장 크기도 가져오기.
 	
@@ -76,24 +85,25 @@ int main() {
 			break;
 		case EXIT:
 			printf("- 출차\n");
-			main_list_head = exit_info(main_list_head, &num_of_car);
+			main_list_head = exit_info(main_list_head, &num_of_car, &money, sm, l);
 			break;
 		case STATUS:
 			printf("- 현황\n");
+			printf("< 금일 수입: %d원 >\n", money);
 			printf("주차장 크기: %d\n주차 차량 수: %d\n남은 공간: %d\n", space, num_of_car, space-num_of_car);
 			printf("[현재 주차된 차량]\n");
 			status(main_list_head);
 			break;
 		case AUTO:
+			printf("아직 구현되지 않았습니다.\n");
 			break;
 		case QUIT:
-			save_and_quit(new, space, main_list_head);
+			save_and_quit(new, space, money, main_list_head);
 			break;
 		case RESET:
 			reset();
 			break;
 		default:
-			printf("nope\n");
 			break;
 	}
 	
@@ -169,7 +179,40 @@ car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car) {
 
 }
 
-void init_rate() {
+int init_money(int new) {
+	FILE* fp = NULL;
+	int tmp_money = 0;
+	
+	if(!new) {
+		fp = fopen("money.txt", "r");
+		if(fp == NULL) {
+			printf("파일을 열 수 없습니다.\n");
+		} else {
+			fp = fopen("money.txt", "r");
+			fscanf(fp, "%d\n", &tmp_money); 
+		}
+		fclose(fp);
+	}
+
+	return tmp_money;
+	
+}
+
+void init_rate(int tmp_sm[], int tmp_l[]) {
+	FILE* fp = NULL;
+	int i = 0;
+	
+	fp = fopen("rate.txt", "r");
+	if(fp == NULL) {
+		printf("파일을 열 수 없습니다.\n");
+	} else {
+		while(!feof(fp)){
+			fscanf(fp, "%d %d\n", &tmp_sm[i], &tmp_l[i]);
+			i += 1;
+		}
+	
+		fclose(fp);
+	}
 
 }
 
@@ -242,28 +285,21 @@ car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int ente
 	
 }	
 
-car_t* exit_info(car_t* main_list_head, int* pnum_of_car) {
+car_t* exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney,  int tmp_sm[], int tmp_l[]) {
 	status(main_list_head);
-
-	time_t current;
-	time(&current);
-
-	struct tm *t = localtime(&current);
-
-	int enter_time = t->tm_hour*60 + t->tm_min;
 
 	char tmp_num[10];
 
 	printf("차량번호: ");
 	scanf("%s", tmp_num);
 	
-	main_list_head = exiting(main_list_head, tmp_num, pnum_of_car);
+	main_list_head = exiting(main_list_head, tmp_num, pnum_of_car, pmoney, tmp_sm, tmp_l);
 
 	return main_list_head;
 
 }
 
-car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car) {
+car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]) {
 	int found = 0;
 
 	car_t* next_p;
@@ -288,6 +324,8 @@ car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car) {
 			main_list_head = next_p -> next;
 		}
 
+		get_money(next_p, tmp_sm, tmp_l, pmoney);
+
 		free(next_p);
 		*pnum_of_car -= 1;
 
@@ -296,6 +334,45 @@ car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car) {
 	}
 
 	return main_list_head;
+
+}
+
+void get_money(car_t* node, int tmp_sm[], int tmp_l[], int* pmoney){	
+	if(!strcmp("소형", node->size) || !strcmp("중형", node->size)) {
+		get_money_by_size(node, tmp_sm, pmoney);
+	} else if (!strcmp("대형", node->size)) {
+		get_money_by_size(node, tmp_l, pmoney);
+	}	
+}
+
+void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney){
+	time_t current;
+	time(&current);
+
+	struct tm *t = localtime(&current);
+
+	int now_time = t->tm_hour*60 + t->tm_min;
+	int total_time = now_time - node->time;
+	int rate;
+
+	if(total_time <= tmp_cs[TURN]){
+		printf("%s 차량은 회차 차량입니다. 요금을 받지 않습니다.\n", node->num);
+	} else if(total_time <= 30) {
+		printf("%s 차량의 요금은 기본 요금인 %d원 입니다.\n", node->num, tmp_cs[DEFAULT]); 
+		*pmoney += tmp_cs[DEFAULT];
+	} else {
+		rate = tmp_cs[DEFAULT] + tmp_cs[PLUS] * ((total_time - 30) / 10 );
+		if(rate > tmp_cs[MAX]){
+			printf("%s 차량의 요금은 하루 최대 요금인 %d원 입니다.\n", node->num, tmp_cs[MAX]); 
+			*pmoney += tmp_cs[MAX];
+		} else {
+			printf("%s 차량의 요금은 %d원 입니다.\n", node->num, rate); 
+			*pmoney += rate;
+		}
+	}
+
+
+
 
 }
 
@@ -315,14 +392,14 @@ void auto_mode() {
 	// TODO - 랜덤하게 exiting, entering 실행
 }
 
-void save_and_quit(int new, int space, car_t* list_head){
+void save_and_quit(int new, int space, int money, car_t* list_head){
 	FILE* fp = NULL; 
 	car_t* tmp_node;
 	
 	if(new){
 		fp = fopen("space.txt", "w");
 		fprintf(fp, "%d", space);
-		fclose(fp);
+		fclose(fp);	
 	} 
 
 	fp = fopen("car.txt", "w");
@@ -335,7 +412,10 @@ void save_and_quit(int new, int space, car_t* list_head){
 	}
 	
 	fclose(fp);
-	
+
+	fp = fopen("money.txt", "w");
+	fprintf(fp, "%d", money);
+	fclose(fp);	
 
 	exit(0);
 }
@@ -352,6 +432,7 @@ void reset() {
 	if(recheck == 1){
 		remove("space.txt");
 		remove("car.txt");
+		remove("money.txt");
 		printf("초기화가 완료되었습니다.\n");
 		ch = fgetc(stdin);
 		
