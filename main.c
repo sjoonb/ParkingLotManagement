@@ -5,7 +5,8 @@
 #include <unistd.h> //access
 #include <time.h>
 
-enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT};
+// Enum 활용해서 기능 선택 직관화
+enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT, RESET};
 
 struct car {
 	char num[10];
@@ -16,17 +17,17 @@ struct car {
 
 typedef struct car car_t;
 
-// Enum 활용해서 기능 선택 직관화
 
 void init_space(int* pspace, int* pnew);
-void init_cars(int new);
+car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car);
 void init_rate();
-car_t* entering(car_t* main_list_head);
-void exiting();
+car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space);
+car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car);
+car_t* exit_info(car_t* main_list_head, int* pnum_of_car);
+car_t* exiting(car_t* main_list_head, char tmp_nump[], int* pnum_of_car);
 void status(car_t* list_head);
 void auto_mode();
 void save_and_quit(int new, int space, car_t* list_head);
-
 void reset(); // 초기화 함수는 숨겨놀까? password 까지 구현?
 
 int main() {
@@ -42,12 +43,15 @@ int main() {
 	
 	car_t* main_list_head = NULL;
 	int space; // 주차장 크기
+	int num_of_car;
+	// TODO - 차량 수 체크, 만차시 만차라고 하고 다시 못나오게
+	int car_count; // 차량 수
 	// 먼저 프로그램이 주차장 크기, 차량, 요금표를 받아와야 한다. 처음 만들어 진건지 체크는 그 안에서 이루어 지면 된다. 
 	// 우선 주차장 사이즈를 가져오고,
 	init_space(&space, &new);
 
 	// 그 사이즈에 맞게 struct car 연결리스트를 형성해야 한다.
-	init_cars(new);
+	main_list_head = init_cars(new, main_list_head, &num_of_car);
 
 	init_rate();
 	
@@ -60,7 +64,7 @@ int main() {
 	loop = 1;
 	while(loop){
 		system("clear");
-		printf("[1] : 입차\n[2] : 출차\n[3] : 현황\n[4] : 자동 모드\n[5] : 저장 및 종료\n");
+		printf("[1] : 입차\n[2] : 출차\n[3] : 현황\n[4] : 자동 모드\n[5] : 저장 및 종료\n[6] : 초기화\n");
 		printf("기능을 선택하세요: ");
 		scanf("%d", &func);
 	
@@ -68,18 +72,25 @@ int main() {
 	// TODO - 입력 오류 처리하기. 기능 외에 숫자가 들어왔을때, 무한루프가 되는 현상 해결.
 		case ENTER:
 			printf("- 입차\n");
-			main_list_head = entering(main_list_head);
+			main_list_head = enter_info(main_list_head, &num_of_car, space);
 			break;
 		case EXIT:
+			printf("- 출차\n");
+			main_list_head = exit_info(main_list_head, &num_of_car);
 			break;
 		case STATUS:
-			printf("%d\n", space);
+			printf("- 현황\n");
+			printf("주차장 크기: %d\n주차 차량 수: %d\n남은 공간: %d\n", space, num_of_car, space-num_of_car);
+			printf("[현재 주차된 차량]\n");
 			status(main_list_head);
 			break;
 		case AUTO:
 			break;
 		case QUIT:
 			save_and_quit(new, space, main_list_head);
+			break;
+		case RESET:
+			reset();
 			break;
 		default:
 			printf("nope\n");
@@ -124,23 +135,37 @@ void init_space(int* pspace, int* pnew) {
 	// int MAX_SPACE = 100;
 
 	// TODO if ~ random init 기능, 자동으로 무작위의 차량을 생성하시겠 습니까? (y/n)
-	// init_cars()
 	// 1 ~ MAX_SPACE 사이에 수로 차량번호, 차종, 입차시간까지 랜덤으로 설정
 
 }
 
 
-void init_cars(int new) {
-	int a;
+car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car) {
 	FILE* fp = NULL;
+
+	char tmp_num[10];
+	char tmp_size[10];
+	int enter_time;
 	
 	if(new){
+		fp = fopen("car.txt", "w");
+		fclose(fp);
 	// TODO - new file 이라면, 랜덤 생성 할껀지 묻고 pass
 	} else {
-		printf("not new\n");
-		scanf("%d", &a);
+		fp = fopen("car.txt", "r");
+		if(fp == NULL) {
+			printf("파일을 열 수 없습니다.\n");
+		} else {
+			while(!feof(fp)){
+				fscanf(fp, "%s %s %d\n", tmp_num, tmp_size, &enter_time);
+				main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car);
+			}
+		
+			fclose(fp);
+		}
 	}
 
+	return main_list_head;
 
 }
 
@@ -148,18 +173,21 @@ void init_rate() {
 
 }
 
+car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
+	if(*pnum_of_car >= space){
+		printf("만차 입니다. 차량을 더 이상 받을 수 없습니다.\n");
+		return main_list_head;
+	}	   
 
-car_t* entering(car_t* main_list_head) {	
 	time_t current;
 	time(&current);
 
 	struct tm *t = localtime(&current);
 
+	int enter_time = t->tm_hour*60 + t->tm_min;
+
 	char tmp_num[10];
 	char tmp_size[10];
-	car_t* new_node;
-	car_t* next_p;
-	car_t* prev_p;
 
 	printf("차량번호: ");
 	scanf("%s", tmp_num);
@@ -168,10 +196,24 @@ car_t* entering(car_t* main_list_head) {
 	printf("차량 사이즈: ");
 	scanf("%s", tmp_size);
 
+	
+	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car);
+
+	return main_list_head;
+
+}
+
+car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car) {			
+	*pnum_of_car += 1;
+
+	car_t* new_node;
+	car_t* next_p;
+	car_t* prev_p;
+
 	new_node = (car_t*) malloc (sizeof(car_t));
 	strcpy(new_node->num, tmp_num);
 	strcpy(new_node->size, tmp_size);
-	new_node->time = t->tm_hour*60 + t->tm_min;
+	new_node->time = enter_time;
 
 	next_p = main_list_head;
 	prev_p = NULL;
@@ -191,6 +233,7 @@ car_t* entering(car_t* main_list_head) {
 		main_list_head = new_node;
 	}
 
+		printf("차량번호 %s %s차량 %d:%d 부로 입차하였습니다.\n", new_node->num, new_node->size, new_node->time/60, new_node->time%60);
 
 	return main_list_head;
 
@@ -199,21 +242,68 @@ car_t* entering(car_t* main_list_head) {
 	
 }	
 
-void exiting() {
+car_t* exit_info(car_t* main_list_head, int* pnum_of_car) {
+	status(main_list_head);
 
-	// TODO - 탐색을 통해 해당 차량을 찾는다. 없다면 없다고 리턴한다.
-	// TODO - 요금표에 대입하여 주차요금 받아서, 총 정산액에 저장 해야한다.
-	// TODO - 회차인 경우도 고려한다.
+	time_t current;
+	time(&current);
+
+	struct tm *t = localtime(&current);
+
+	int enter_time = t->tm_hour*60 + t->tm_min;
+
+	char tmp_num[10];
+
+	printf("차량번호: ");
+	scanf("%s", tmp_num);
+	
+	main_list_head = exiting(main_list_head, tmp_num, pnum_of_car);
+
+	return main_list_head;
+
+}
+
+car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car) {
+	int found = 0;
+
+	car_t* next_p;
+	car_t* prev_p;
+
+	next_p = main_list_head;
+	prev_p = NULL;
+
+	while(next_p) {
+		if(strcmp(next_p->num, tmp_num) == 0){
+			found = 1;
+			break;
+		}
+		prev_p = next_p;
+		next_p = next_p -> next;
+	}
+
+	if(found){
+		if(prev_p) {
+			prev_p -> next = next_p -> next;
+		} else {
+			main_list_head = next_p -> next;
+		}
+
+		free(next_p);
+		*pnum_of_car -= 1;
+
+	} else {
+		printf("해당 차량이 존재하지 않습니다.\n");
+	}
+
+	return main_list_head;
 
 }
 
 void status(car_t* list_head) {
-	
 	while(list_head != NULL){
-		printf("%s, %s, %d:%d\n", list_head->num, list_head->size, list_head->time/60, list_head->time%60);
+		printf("%s / %s / %d:%d\n", list_head->num, list_head->size, list_head->time/60, list_head->time%60);
 		list_head = list_head->next;
 	}
-	printf("\n");
 
 	// TODO - 정산
 	// TODO - 현재 차량들 출력
@@ -227,6 +317,7 @@ void auto_mode() {
 
 void save_and_quit(int new, int space, car_t* list_head){
 	FILE* fp = NULL; 
+	car_t* tmp_node;
 	
 	if(new){
 		fp = fopen("space.txt", "w");
@@ -237,12 +328,40 @@ void save_and_quit(int new, int space, car_t* list_head){
 	fp = fopen("car.txt", "w");
 
 	while(list_head != NULL){
+		tmp_node = list_head;
 		fprintf(fp, "%s %s %d\n", list_head->num, list_head->size, list_head->time);
 		list_head = list_head->next;
+		free(tmp_node);
 	}
 	
 	fclose(fp);
 	
 
 	exit(0);
+}
+
+void reset() {
+	int recheck;
+	char ch;
+
+	printf("정말 초기화 하시겠습니까?\n");
+	printf("[1] : 네 [2] : 아니오\n");
+	printf("입력: ");
+	scanf("%d", &recheck);
+
+	if(recheck == 1){
+		remove("space.txt");
+		remove("car.txt");
+		printf("초기화가 완료되었습니다.\n");
+		ch = fgetc(stdin);
+		
+		printf("엔터키를 입력하여 재실행..");
+		ch = fgetc(stdin);
+
+		main();
+
+	} else if (recheck == 2) {
+		printf("취소되었습니다.\n");	
+	}
+
 }
