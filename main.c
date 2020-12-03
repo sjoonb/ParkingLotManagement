@@ -136,15 +136,6 @@ void init_space(int* pspace, int* pnew) {
 		scanf("%d", pspace);
 		*pnew = 1; // 마지막에 저장할 때 사용하기 위한 변수
 	} 
-	// else
-	// TODO - 파일에서 space 와, 차량들을 갖고온다. 이 때 차량이 몇개인지 count 해준다.
-
-	//else 일 때에는 그저 있는 파일에서 읽어와서 배열 혹은 연결리스트와 spacae 를 지정하면 된다.
-
-	// TODO - 동적 메모리 할당 ( 주차장 최대 입차 수 설정 ), 배열 안에 struct 구조, 연결리스트 활용, 포인터 활용
-	// int MAX_SPACE = 100;
-
-	// TODO if ~ random init 기능, 자동으로 무작위의 차량을 생성하시겠 습니까? (y/n)
 	// 1 ~ MAX_SPACE 사이에 수로 차량번호, 차종, 입차시간까지 랜덤으로 설정
 
 }
@@ -280,9 +271,6 @@ car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int ente
 
 	return main_list_head;
 
-	// TODO - 만차시, 만차입니다 출력. 차량 받지 않음, 차량 규정에 맞지 않으면 추가해선 안된다.
-	// 새로운 차량이 들어올 때 마다 연결리스트에 새로 추가해 줘야한다.
-	
 }	
 
 car_t* exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney,  int tmp_sm[], int tmp_l[]) {
@@ -361,7 +349,7 @@ void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney){
 		printf("%s 차량의 요금은 기본 요금인 %d원 입니다.\n", node->num, tmp_cs[DEFAULT]); 
 		*pmoney += tmp_cs[DEFAULT];
 	} else {
-		rate = tmp_cs[DEFAULT] + tmp_cs[PLUS] * ((total_time - 30) / 10 );
+		rate = tmp_cs[DEFAULT] + tmp_cs[PLUS] * ((total_time - 30) / 10 + 1);
 		if(rate > tmp_cs[MAX]){
 			printf("%s 차량의 요금은 하루 최대 요금인 %d원 입니다.\n", node->num, tmp_cs[MAX]); 
 			*pmoney += tmp_cs[MAX];
@@ -381,10 +369,6 @@ void status(car_t* list_head) {
 		printf("%s / %s / %d:%d\n", list_head->num, list_head->size, list_head->time/60, list_head->time%60);
 		list_head = list_head->next;
 	}
-
-	// TODO - 정산
-	// TODO - 현재 차량들 출력
-	// TODO - 여러 줄 출력할 때 어떻게 할 건지 정해야 한다.	
 }
 
 void auto_mode() {
@@ -416,6 +400,8 @@ void save_and_quit(int new, int space, int money, car_t* list_head){
 	fp = fopen("money.txt", "w");
 	fprintf(fp, "%d", money);
 	fclose(fp);	
+
+	printf("데이터를 저장합니다..");
 
 	exit(0);
 }
