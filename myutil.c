@@ -1,4 +1,4 @@
-* mylib.c */
+/* mylib.c */
 #include "myutil.h"
 #include <stdio.h>
 #include <sys/ioctl.h> // For FIONREAD
