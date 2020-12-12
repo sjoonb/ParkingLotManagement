@@ -32,8 +32,8 @@ int get_now_time();
 void get_money();
 void get_money_by_size();
 void status();
-void auto_mode(); // 미구현
-void random_enter_info();
+car_t* auto_mode(); // 미구현
+car_t* random_enter_info();
 void random_exit_info();
 void save_and_quit();
 void reset(); 
@@ -96,7 +96,7 @@ int main() {
 		case AUTO:
 			printf("- 자동모드\n");
 			printf("자동모드를 중지하시려면 아무키나 입력하세요..\n");
-			auto_mode();
+			main_list_head = auto_mode(main_list_head, &num_of_car, space);
 			break;
 		case QUIT:
 			save_and_quit(new, space, money, main_list_head);
@@ -383,7 +383,7 @@ void status(car_t* list_head) {
 	}
 }
 
-void auto_mode() {
+car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space) {
 	// TODO - 랜덤하게 exiting, entering 실행
 	
 	srand(time(NULL));
@@ -391,7 +391,6 @@ void auto_mode() {
 	int mode;
 
 	
-	//while(!kbhit())
 	while(!kbhit())
 	{
 
@@ -400,7 +399,7 @@ void auto_mode() {
 		switch(mode) {
 			case ENTER:
 				printf("ENTER\n");
-				random_enter_info();
+				main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
 				break;
 			case EXIT:
 				printf("EXIT\n");
@@ -415,10 +414,46 @@ void auto_mode() {
 	
 	printf("\n");
 
+	return main_list_head;
 	
 }
 
-void random_enter_info(){
+car_t* random_enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
+	// number
+	char num_kr[14][3] = {"가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하"};
+	char ran_num[10];
+	int i;
+
+	for(i = 0; i < 9; i++){
+		if(i == 2){
+			strcat(ran_num, "가");
+			i += 3;
+		}
+		sprintf(&ran_num[i], "%d", rand() % 10);
+	}
+
+	printf("%s\n", ran_num);
+
+
+	//int i = rand() % 14;	
+	//int front_number = rand() % 90 + 10; 
+
+	// size
+	char size[3][10] = {"소형", "중형", "대형"};
+	char ran_size[10];
+	int j = rand() % 3;
+	
+	strcpy(ran_size, size[j]);
+
+	printf("%s\n", ran_size);
+
+	int enter_time = get_now_time();
+
+	main_list_head = entering(main_list_head, ran_num, ran_size, enter_time, pnum_of_car, space);
+
+	return main_list_head;
+
+
 }
 
 void random_exit_info(){
