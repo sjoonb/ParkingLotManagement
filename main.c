@@ -1,3 +1,4 @@
+#include "myutil.h" //kbhit 
 #include <stdio.h>
 #include <curses.h> // system clear
 #include <stdlib.h>
@@ -64,11 +65,6 @@ int main() {
 	init_rate(sm, l);
 	
 	
-	// TODO - if true, 파일에서 읽어와서 구조체로 형성하기, 주차장 크기도 가져오기.
-	
-	// Space 가 존재하는 상태이므로 이제 요금표를 가져와야함
-	// TODO - 요금표 가져오기 (일단은 직접 작성)
-
 	// Main Loop 실행
 	loop = 1;
 	while(loop){
@@ -95,7 +91,9 @@ int main() {
 			status(main_list_head);
 			break;
 		case AUTO:
-			printf("아직 구현되지 않았습니다.\n");
+			printf("- 자동모드\n");
+			printf("자동모드를 중지하시려면 아무키나 입력하세요..\n");
+			auto_mode();
 			break;
 		case QUIT:
 			save_and_quit(new, space, money, main_list_head);
@@ -372,8 +370,44 @@ void status(car_t* list_head) {
 }
 
 void auto_mode() {
-	
 	// TODO - 랜덤하게 exiting, entering 실행
+	
+	srand(time(NULL));
+
+	int mode;
+
+	
+	//while(!kbhit())
+	while(!kbhit())
+	{
+
+		mode = rand()%2 + 1;
+
+		switch(mode) {
+			case ENTER:
+				printf("ENTER\n");
+				random_enter_info();
+				break;
+			case EXIT:
+				printf("EXIT\n");
+				random_exit_info();
+				break;
+		}
+
+		fflush(stdout);
+		sleep(1);
+		
+	}
+	
+	printf("\n");
+
+	
+}
+
+void random_enter_info(){
+}
+
+void random_exit_info(){
 }
 
 void save_and_quit(int new, int space, int money, car_t* list_head){
