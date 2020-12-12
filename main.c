@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h> //strcpy, strcmp
 #include <unistd.h> //access
+#include <ctype.h> //isdigit
 #include <time.h>
 
 // Enum 활용해서 기능 선택 직관화
@@ -32,9 +33,9 @@ int get_now_time();
 void get_money();
 void get_money_by_size();
 void status();
-car_t* auto_mode(); // 미구현
+car_t* auto_mode(); 
 car_t* random_enter_info();
-void random_exit_info();
+car_t* random_exit_info();
 void save_and_quit();
 void reset(); 
 
@@ -95,9 +96,10 @@ int main() {
 			break;
 		case AUTO:
 			printf("- 자동모드\n");
-			printf("자동모드를 중지하시려면 아무키나 입력하세요..\n");
-			main_list_head = auto_mode(main_list_head, &num_of_car, space);
-			break;
+			printf("자동모드를 중지하시려면 엔터키를 입력하세요..\n");
+			main_list_head = auto_mode(main_list_head, &num_of_car, space, &money, sm, l);
+			printf("데이터를 저장하고 종료합니다. 프로그램을 재실행해 주세요.\n");
+			ch = fgetc(stdin);
 		case QUIT:
 			save_and_quit(new, space, money, main_list_head);
 			break;
@@ -217,14 +219,43 @@ car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	int enter_time = get_now_time(); 
 
 	char tmp_num[10];
+	int i;
+
 	char tmp_size[10];
+	char size_arr[] = "소형|중형|대형";
+	char *is_in_size;
 
 	printf("차량번호: ");
 	scanf("%s", tmp_num);
 
+	for(i = 0; i < 10; i++){
+		if(i >= 2 && i <= 4){
+			if(!(tmp_num[i] & 0x80)){
+				printf("올바른 차량 형식이 아닙니다.\n");
+				return main_list_head;
+			}
+		} else if(i == 9) {
+			if(tmp_num[i] != '\0'){
+				printf("올바른 차량 형식이 아닙니다.\n");
+				return main_list_head;
+			}
+		} else {	
+			if(!(isdigit(tmp_num[i]))){
+				printf("올바른 차량 형식이 아닙니다.\n");
+				return main_list_head;
+			}
+		}
+	}
+
 	printf("소형 / 중형 / 대형\n");
 	printf("차량 사이즈: ");
 	scanf("%s", tmp_size);
+
+	is_in_size = strstr(size_arr, tmp_size);
+	if(is_in_size == NULL){
+		printf("올바른 차량 크기 형식이 아닙니다.\n");
+		return main_list_head;
+	}
 
 	
 	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space);
@@ -314,13 +345,15 @@ car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car, int* pmo
 		}
 
 		get_money(next_p, tmp_sm, tmp_l, pmoney);
-
+	
+			
 		free(next_p);
 		*pnum_of_car -= 1;
 
 	} else {
 		printf("해당 차량이 존재하지 않습니다.\n");
 	}
+
 
 	return main_list_head;
 
@@ -383,35 +416,37 @@ void status(car_t* list_head) {
 	}
 }
 
-car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space) {
+car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney, int tmp_sm[], int tmp_l[]) {
 	// TODO - 랜덤하게 exiting, entering 실행
 	
+
 	srand(time(NULL));
 
 	int mode;
 
-	
 	while(!kbhit())
 	{
 
-		mode = rand()%2 + 1;
+		mode = rand() % 2 + 1;
 
 		switch(mode) {
 			case ENTER:
-				printf("ENTER\n");
 				main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
 				break;
 			case EXIT:
-				printf("EXIT\n");
-				random_exit_info();
+				if(*pnum_of_car > 0){
+					main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
+				}
 				break;
 		}
 
 		fflush(stdout);
-		sleep(1);
+		usleep(1 * 1000000);
 		
 	}
-	
+		
+	//printf("%c", c);
+
 	printf("\n");
 
 	return main_list_head;
@@ -420,23 +455,20 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space) {
 
 car_t* random_enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	// number
-	char num_kr[14][3] = {"가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하"};
+	char num_kr[14][10] = {"가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하"};
+
 	char ran_num[10];
 	int i;
+	int r = rand() % 14;
 
 	for(i = 0; i < 9; i++){
 		if(i == 2){
-			strcat(ran_num, "가");
+			strcat(ran_num, num_kr[r]);
 			i += 3;
 		}
 		sprintf(&ran_num[i], "%d", rand() % 10);
 	}
 
-	printf("%s\n", ran_num);
-
-
-	//int i = rand() % 14;	
-	//int front_number = rand() % 90 + 10; 
 
 	// size
 	char size[3][10] = {"소형", "중형", "대형"};
@@ -445,8 +477,8 @@ car_t* random_enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	
 	strcpy(ran_size, size[j]);
 
-	printf("%s\n", ran_size);
 
+	// time
 	int enter_time = get_now_time();
 
 	main_list_head = entering(main_list_head, ran_num, ran_size, enter_time, pnum_of_car, space);
@@ -456,7 +488,21 @@ car_t* random_enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 
 }
 
-void random_exit_info(){
+car_t* random_exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]){
+	car_t* list_head = main_list_head;
+	int rand_car_num = rand() % *pnum_of_car;
+	int i = 0;
+
+	while(i != rand_car_num){
+		list_head = list_head->next;
+		i += 1;
+	}
+
+
+	main_list_head = exiting(main_list_head, list_head->num, pnum_of_car, pmoney, tmp_sm, tmp_l);
+
+	return main_list_head;
+
 }
 
 void save_and_quit(int new, int space, int money, car_t* list_head){
