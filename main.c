@@ -20,19 +20,22 @@ struct car {
 typedef struct car car_t;
 
 
-void init_space(int* pspace, int* pnew);
-car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car);
-int init_money(int new);
-void init_rate(int tmp_sm[], int tmp_l[]);
-car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space);
-car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car);
-car_t* exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]);
-car_t* exiting(car_t* main_list_head, char tmp_nump[], int* pnum_of_car, int* pmoney, int tmp_sm[], int tmp_l[]);
-void get_money(car_t* node, int tmp_sm[], int tmp_l[], int* pmoney);
-void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney);
-void status(car_t* list_head);
+void init_space();
+car_t* init_cars();
+int init_money();
+void init_rate();
+car_t* enter_info();
+car_t* entering();
+car_t* exit_info();
+car_t* exiting();
+int get_now_time();
+void get_money();
+void get_money_by_size();
+void status();
 void auto_mode(); // 미구현
-void save_and_quit(int new, int space, int money, car_t* list_head);
+void random_enter_info();
+void random_exit_info();
+void save_and_quit();
 void reset(); 
 
 int main() {
@@ -57,7 +60,7 @@ int main() {
 	init_space(&space, &new);
 
 	// 그 사이즈에 맞게 struct car 연결리스트를 형성해야 한다.
-	main_list_head = init_cars(new, main_list_head, &num_of_car);
+	main_list_head = init_cars(new, main_list_head, &num_of_car, space);
 	
 	money = init_money(new);
 
@@ -139,7 +142,7 @@ void init_space(int* pspace, int* pnew) {
 }
 
 
-car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car) {
+car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car, int space) {
 	FILE* fp = NULL;
 
 	char tmp_num[10];
@@ -157,7 +160,7 @@ car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car) {
 		} else {
 			while(!feof(fp)){
 				fscanf(fp, "%s %s %d\n", tmp_num, tmp_size, &enter_time);
-				main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car);
+				main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space);
 			}
 		
 			fclose(fp);
@@ -211,12 +214,7 @@ car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 		return main_list_head;
 	}	   
 
-	time_t current;
-	time(&current);
-
-	struct tm *t = localtime(&current);
-
-	int enter_time = t->tm_hour*60 + t->tm_min;
+	int enter_time = get_now_time(); 
 
 	char tmp_num[10];
 	char tmp_size[10];
@@ -229,13 +227,18 @@ car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	scanf("%s", tmp_size);
 
 	
-	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car);
+	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space);
 
 	return main_list_head;
 
 }
 
-car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car) {			
+car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car, int space) {			
+	if(*pnum_of_car >= space){
+		printf("만차 입니다. 차량을 더 이상 받을 수 없습니다.\n");
+		return main_list_head;
+	}	   
+
 	*pnum_of_car += 1;
 
 	car_t* new_node;
@@ -321,6 +324,17 @@ car_t* exiting(car_t* main_list_head, char tmp_num[], int* pnum_of_car, int* pmo
 
 	return main_list_head;
 
+}
+
+int get_now_time(){
+	time_t current;
+	time(&current);
+
+	struct tm *t = localtime(&current);
+
+	int enter_time = t->tm_hour*60 + t->tm_min;
+
+	return enter_time;
 }
 
 void get_money(car_t* node, int tmp_sm[], int tmp_l[], int* pmoney){	
