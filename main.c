@@ -76,6 +76,7 @@ int main() {
 	loop = 1;
 	while(loop){
 		system("clear");
+		printf("<주차장 차량 관리 프로그램>\n");
 		printf("[1] : 입차\n[2] : 출차\n[3] : 현황\n[4] : 자동 모드\n[5] : 저장 및 종료\n[6] : 초기화\n");
 		printf("기능을 선택하세요: ");
 		scanf("%d", &func);
@@ -104,7 +105,7 @@ int main() {
 			printf("데이터를 저장하고 종료합니다. 프로그램을 재실행해 주세요.\n");
 			ch = fgetc(stdin);
 		case QUIT:
-			save_and_quit(new, space, money, main_list_head);
+			save_and_quit(new, space, money, main_list_head, num_of_car);
 			break;
 		case RESET:
 			reset();
@@ -131,7 +132,6 @@ void init_space(int* pspace, int* pnew) {
 	FILE* fp = NULL;
 
 	if(access("space.txt", F_OK) == 0) {
-		// TODO - 자동차 랜덤 생성할지 묻는다. 아니면 그냥 빈칸으로 냄겨 둔다.
 		fp = fopen("space.txt", "r");
 		fscanf(fp, "%d\n", pspace); 
 
@@ -142,7 +142,6 @@ void init_space(int* pspace, int* pnew) {
 		scanf("%d", pspace);
 		*pnew = 1; // 마지막에 저장할 때 사용하기 위한 변수
 	} 
-	// 1 ~ MAX_SPACE 사이에 수로 차량번호, 차종, 입차시간까지 랜덤으로 설정
 
 }
 
@@ -154,18 +153,14 @@ car_t* init_cars(int new, car_t* main_list_head, int* pnum_of_car, int space) {
 	char tmp_size[10];
 	int enter_time;
 	
-	if(new){
-		fp = fopen("car.txt", "w");
-		fclose(fp);
-	// TODO - new file 이라면, 랜덤 생성 할껀지 묻고 pass
-	} else {
+	if(access("car.txt", F_OK) == 0) {
 		fp = fopen("car.txt", "r");
 		if(fp == NULL) {
 			printf("파일을 열 수 없습니다.\n");
 		} else {
 			while(!feof(fp)){
 				fscanf(fp, "%s %s %d\n", tmp_num, tmp_size, &enter_time);
-				main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space);
+				main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space, 0);
 			}
 		
 			fclose(fp);
@@ -261,13 +256,13 @@ car_t* enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	}
 
 	
-	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space);
+	main_list_head = entering(main_list_head, tmp_num, tmp_size, enter_time, pnum_of_car, space, 1);
 
 	return main_list_head;
 
 }
 
-car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car, int space) {			
+car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int enter_time, int* pnum_of_car, int space, int write_mode) {			
 	if(*pnum_of_car >= space){
 		printf("만차 입니다. 차량을 더 이상 받을 수 없습니다.\n");
 		return main_list_head;
@@ -302,7 +297,10 @@ car_t* entering(car_t* main_list_head, char tmp_num[], char tmp_size[], int ente
 		main_list_head = new_node;
 	}
 
-		printf("차량번호 %s %s차량 %d:%d 부로 입차하였습니다.\n", new_node->num, new_node->size, new_node->time/60, new_node->time%60);
+	printf("차량번호 %s %s차량 %d:%d 부로 입차하였습니다.\n", new_node->num, new_node->size, new_node->time/60, new_node->time%60);
+	if(write_mode){
+		enter_history(new_node->time, new_node->num);
+	}
 
 	return main_list_head;
 
@@ -313,7 +311,7 @@ car_t* exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney,  int tmp_
 
 	char tmp_num[10];
 
-	printf("차량번호: ");
+	printf("\n차량번호: ");
 	scanf("%s", tmp_num);
 	
 	main_list_head = exiting(main_list_head, tmp_num, pnum_of_car, pmoney, tmp_sm, tmp_l);
@@ -399,30 +397,45 @@ void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney){
 
 	if(total_time <= tmp_cs[TURN]){
 		printf("%s 차량은 회차 차량입니다. 요금을 받지 않습니다.\n", node->num);
+		rate = 0;
 	} else if(total_time <= 30) {
 		printf("%s 차량의 요금은 기본 요금인 %d원 입니다.\n", node->num, tmp_cs[DEFAULT]); 
-		*pmoney += tmp_cs[DEFAULT];
+		//*pmoney += tmp_cs[DEFAULT];
+		rate = tmp_cs[DEFAULT];
 	} else {
 		rate = tmp_cs[DEFAULT] + tmp_cs[PLUS] * ((total_time - 30) / 10 + 1);
 		if(rate > tmp_cs[MAX]){
 			printf("%s 차량의 요금은 하루 최대 요금인 %d원 입니다.\n", node->num, tmp_cs[MAX]); 
-			*pmoney += tmp_cs[MAX];
+			//*pmoney += tmp_cs[MAX];
+			rate = tmp_cs[MAX];
 		} else {
 			printf("%s 차량의 요금은 %d원 입니다.\n", node->num, rate); 
-			*pmoney += rate;
+			//*pmoney += rate;
 		}
 	}
 
+	*pmoney += rate;
 
+	exit_history(node->time, node->num, rate, *pmoney);
 
 
 }
 
 void status(car_t* list_head) {
-	while(list_head != NULL){
+	char ch;
+	int count = 0;
+	ch = fgetc(stdin);
+	while(list_head != NULL){	
+		count += 1;
+		if(count % 30 == 0){
+			printf("엔터키를 입력하세요..");
+			ch = fgetc(stdin);
+		}
+
 		printf("%s / %s / %d:%d\n", list_head->num, list_head->size, list_head->time/60, list_head->time%60);
 		list_head = list_head->next;
 	}
+	printf("마지막 차량 입니다..");
 }
 
 car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney, int tmp_sm[], int tmp_l[]) {
@@ -448,20 +461,25 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 		if(count == rand_time){
 
 			mode = rand() % 2 + 1;
+//			mode = 1;
 
 			switch(mode) {
-				case ENTER:
-					main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
-					rand_time = rand() % (max - min) + 5;
-					count = 0;
-					break;
-				case EXIT:
-					if(*pnum_of_car > 0){
-						main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
+					case ENTER:
+						main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
 						rand_time = rand() % (max - min) + 5;
 						count = 0;
-					}
-					break;
+						break;
+					case EXIT:
+						if(*pnum_of_car > 0){
+							main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
+							rand_time = rand() % (max - min) + 5;
+							count = 0;
+						} else {
+							printf("차량이 존재하지 않습니다.\n");
+							rand_time = rand() % (max - min) + 5;
+							count = 0;
+						}
+						break;
 			}
 
 		}
@@ -469,7 +487,7 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 		count += 1;
 
 		fflush(stdout);
-		usleep(1 * SECONDS);
+		usleep(1 * 100000);
 		
 	}
 		
@@ -509,7 +527,7 @@ car_t* random_enter_info(car_t* main_list_head, int* pnum_of_car, int space) {
 	// time
 	int enter_time = get_now_time();
 
-	main_list_head = entering(main_list_head, ran_num, ran_size, enter_time, pnum_of_car, space);
+	main_list_head = entering(main_list_head, ran_num, ran_size, enter_time, pnum_of_car, space, 1);
 
 	return main_list_head;
 
@@ -533,7 +551,7 @@ car_t* random_exit_info(car_t* main_list_head, int* pnum_of_car, int* pmoney, in
 
 }
 
-void save_and_quit(int new, int space, int money, car_t* list_head){
+void save_and_quit(int new, int space, int money, car_t* list_head, int num_of_car){
 	FILE* fp = NULL; 
 	car_t* tmp_node;
 	
@@ -543,16 +561,23 @@ void save_and_quit(int new, int space, int money, car_t* list_head){
 		fclose(fp);	
 	} 
 
-	fp = fopen("car.txt", "w");
+	if(num_of_car > 0){
 
-	while(list_head != NULL){
-		tmp_node = list_head;
-		fprintf(fp, "%s %s %d\n", list_head->num, list_head->size, list_head->time);
-		list_head = list_head->next;
-		free(tmp_node);
+		fp = fopen("car.txt", "w");
+
+		while(list_head != NULL){
+			tmp_node = list_head;
+			fprintf(fp, "%s %s %d\n", list_head->num, list_head->size, list_head->time);
+			list_head = list_head->next;
+			free(tmp_node);
+		}
+		
+		fclose(fp);
+
+	} else {
+
+
 	}
-	
-	fclose(fp);
 
 	fp = fopen("money.txt", "w");
 	fprintf(fp, "%d", money);
