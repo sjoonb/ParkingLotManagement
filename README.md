@@ -1,4 +1,5 @@
 # ParkingLotManagement
+주차장 차량의 입차 및 출차를 관리하는 
 
 ## 실행 방법
 
