@@ -31,7 +31,7 @@ $ ./ParkingLotManagement
 
 해당 주차장의 최대 수용 가능한 차량 수를 정수로 입력
 
-### 6가지 기능
+### 7가지 기능
 <img width="515" alt="스크린샷 2020-12-13 오후 9 45 10" src="https://user-images.githubusercontent.com/70687318/102012223-7ace7a80-3d8c-11eb-83ef-79299570c2a1.png">
 
 [1] : 입차 - 차량 번호 직접 입력 (00가0000 식으로 입력), 차량 사이즈 입력 (소형 / 중형 / 대형)     
