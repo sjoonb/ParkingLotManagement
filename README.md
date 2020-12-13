@@ -42,13 +42,86 @@ $ ./ParkingLotManagement
 [7] : 초기화 - 모든 데이터 초기화 후 프로그램 재실행   
 
 ## 상세 설명
-### 요금 수정
-### 요금 수정
+### 요금표 수정
+#### 현재 사용중인 요금표
 ![rate](https://user-images.githubusercontent.com/70687318/102012326-15c75480-3d8d-11eb-9180-0b61d4a8235d.png)    
-rate.txt 파일을
-수정하여
+
+<img width="501" alt="스크린샷 2020-12-13 오후 10 26 28" src="https://user-images.githubusercontent.com/70687318/102013259-4493f980-3d92-11eb-8391-bb2cad326749.png">
+
+rate.txt 파일을 배열에 맞게 수정하여 각자의 주차장의 요금표에 맞게 수정하면 된다.
 
 ### 자동 모드
+#### 설명
+자동 모드는 랜덤으로 차량 번호와 사이즈를 생성하고, 입차 및 출차를 수행하는 모드이다.      
+실제 프로그램 사용상에 카메라를 통해 입차 및 출차하는 차량 번호의 데이터 입력이 이뤄지는 부분을 우선 랜덤으로 구현해 놓은 것이다.   
+후의 데이터 입력이 카메라를 통한 차량번호 입력으로 구현될 것을 고려하여 설계였다.
+
+#### 코드 상세
+<pre>
+<code>
+car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney, int tmp_sm[], int tmp_l[]) {
+
+	srand(time(NULL));
+
+	int mode;
+	int min, max, count;
+	int rand_time;
+
+	min = 1; // * MINUTES;
+	max = 3; // * MINUTES;
+
+	count = 0;
+	
+	rand_time = rand() % (max - min) +  min; // * MINUTES;
+	
+	while(!kbhit())
+	{
+
+		if(count == rand_time){
+
+			mode = rand() % 2 + 1;
+
+			switch(mode) {
+					case ENTER:
+						main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
+						rand_time = rand() % (max - min) + min; // * MINUTES;
+						count = 0;
+						break;
+					case EXIT:
+						if(*pnum_of_car > 0){
+							main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
+							rand_time = rand() % (max - min) + min; // * MINUTES;
+							count = 0;
+						} else {
+							printf("차량이 존재하지 않습니다.\n");
+							rand_time = rand() % (max - min) + min; // * MINUTES;
+							count = 0;
+						}
+						break;
+			}
+
+		}
+
+		count += 1;
+
+		fflush(stdout);
+		usleep(1 * SECONDS);
+		
+	}
+		
+	//printf("%c", c);
+
+	printf("\n");
+
+	return main_list_head;
+	
+}
+</code>
+</pre>
+현재는 자동 모드의 출력을 바로 확인하기 위해 MINUTES 기호상수를 주석처리 해 놓았다. 초단위로 출력이 이루어지는데, 이를 분으로 바꾸려면 해당 부분의 주석을 해제하면 된다.
+변수 min은 최소 (분), max는 최대 (분) 을 나타내는 변수이다. (현재 코드에서는 초단위로 인식된다.)
+즉, 1 ~ 3 (분) 의 주기로 차량 한대의 입차 혹은 출차가 이루어지는 것이다.
+
 
 
 
