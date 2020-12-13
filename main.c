@@ -1,4 +1,4 @@
-#include "myutil.h" //kbhit 
+#include "mylib.h" //kbhit 
 #include <stdio.h>
 #include <curses.h> // system clear
 #include <stdlib.h>
@@ -451,12 +451,12 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 	int min, max, count;
 	int rand_time;
 
-	min = 5; // * MINUTES;
-	max = 10; // * MINUTES;
+	min = 1; // * MINUTES;
+	max = 3; // * MINUTES;
 
 	count = 0;
 	
-	rand_time = rand() % (max - min) +  5; // * MINUTES;
+	rand_time = rand() % (max - min) +  min; // * MINUTES;
 	
 	while(!kbhit())
 	{
@@ -469,17 +469,17 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 			switch(mode) {
 					case ENTER:
 						main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
-						rand_time = rand() % (max - min) + 5;
+						rand_time = rand() % (max - min) + min; // * MINUTES;
 						count = 0;
 						break;
 					case EXIT:
 						if(*pnum_of_car > 0){
 							main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
-							rand_time = rand() % (max - min) + 5;
+							rand_time = rand() % (max - min) + min; // * MINUTES;
 							count = 0;
 						} else {
 							printf("차량이 존재하지 않습니다.\n");
-							rand_time = rand() % (max - min) + 5;
+							rand_time = rand() % (max - min) + min; // * MINUTES;
 							count = 0;
 						}
 						break;
@@ -490,7 +490,7 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 		count += 1;
 
 		fflush(stdout);
-		usleep(1 * 100000);
+		usleep(1 * SECONDS);
 		
 	}
 		

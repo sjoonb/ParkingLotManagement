@@ -1,5 +1,5 @@
 /* mylib.c */
-#include "myutil.h"
+#include "mylib.h"
 #include <stdio.h>
 #include <sys/ioctl.h> // For FIONREAD
 #include <termios.h>

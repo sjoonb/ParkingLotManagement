@@ -1,4 +1,4 @@
-#include "myutil.h"
+#include "mylib.h"
 #include <curses.h>
 #include <stdio.h>
 #include <unistd.h>
