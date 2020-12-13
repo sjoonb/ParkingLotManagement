@@ -7,6 +7,9 @@
 #include <ctype.h> //isdigit
 #include <time.h>
 
+#define SECONDS 1000000
+#define MINUTES 60 
+
 // Enum 활용해서 기능 선택 직관화
 enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT, RESET};
 enum ratetype {DEFAULT, PLUS, MAX, TURN};
@@ -385,8 +388,14 @@ void get_money_by_size(car_t* node, int tmp_cs[], int* pmoney){
 	struct tm *t = localtime(&current);
 
 	int now_time = t->tm_hour*60 + t->tm_min;
-	int total_time = now_time - node->time;
+	int total_time;
 	int rate;
+	
+	if(now_time < node->time){
+		now_time += 1440;
+	}
+
+	total_time = now_time - node->time;
 
 	if(total_time <= tmp_cs[TURN]){
 		printf("%s 차량은 회차 차량입니다. 요금을 받지 않습니다.\n", node->num);
@@ -423,25 +432,44 @@ car_t* auto_mode(car_t* main_list_head, int* pnum_of_car, int space, int* pmoney
 	srand(time(NULL));
 
 	int mode;
+	int min, max, count;
+	int rand_time;
 
+	min = 5; // * MINUTES;
+	max = 10; // * MINUTES;
+
+	count = 0;
+	
+	rand_time = rand() % (max - min) +  5; // * MINUTES;
+	
 	while(!kbhit())
 	{
 
-		mode = rand() % 2 + 1;
+		if(count == rand_time){
 
-		switch(mode) {
-			case ENTER:
-				main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
-				break;
-			case EXIT:
-				if(*pnum_of_car > 0){
-					main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
-				}
-				break;
+			mode = rand() % 2 + 1;
+
+			switch(mode) {
+				case ENTER:
+					main_list_head = random_enter_info(main_list_head, pnum_of_car, space);
+					rand_time = rand() % (max - min) + 5;
+					count = 0;
+					break;
+				case EXIT:
+					if(*pnum_of_car > 0){
+						main_list_head = random_exit_info(main_list_head, pnum_of_car, pmoney, tmp_sm, tmp_l);
+						rand_time = rand() % (max - min) + 5;
+						count = 0;
+					}
+					break;
+			}
+
 		}
 
+		count += 1;
+
 		fflush(stdout);
-		usleep(1 * 1000000);
+		usleep(1 * SECONDS);
 		
 	}
 		
