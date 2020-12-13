@@ -11,7 +11,7 @@
 #define MINUTES 60 
 
 // Enum 활용해서 기능 선택 직관화
-enum functype {ENTER = 1, EXIT, STATUS, AUTO, QUIT, RESET};
+enum functype {ENTER = 1, EXIT, STATUS, PAST, AUTO, QUIT, RESET};
 enum ratetype {DEFAULT, PLUS, MAX, TURN};
 
 struct car {
@@ -77,7 +77,7 @@ int main() {
 	while(loop){
 		system("clear");
 		printf("<주차장 차량 관리 프로그램>\n");
-		printf("[1] : 입차\n[2] : 출차\n[3] : 현황\n[4] : 자동 모드\n[5] : 저장 및 종료\n[6] : 초기화\n");
+		printf("[1] : 입차\n[2] : 출차\n[3] : 현황\n[4] : 과거 내역\n[5] : 자동 모드\n[6] : 저장 및 종료\n[7] : 초기화\n");
 		printf("기능을 선택하세요: ");
 		scanf("%d", &func);
 	
@@ -97,6 +97,9 @@ int main() {
 			printf("주차장 크기: %d\n주차 차량 수: %d\n남은 공간: %d\n", space, num_of_car, space-num_of_car);
 			printf("[현재 주차된 차량]\n");
 			status(main_list_head);
+			break;
+		case PAST:
+			main_history();
 			break;
 		case AUTO:
 			printf("- 자동모드\n");
@@ -427,7 +430,7 @@ void status(car_t* list_head) {
 	ch = fgetc(stdin);
 	while(list_head != NULL){	
 		count += 1;
-		if(count % 30 == 0){
+		if(count % 50 == 0){
 			printf("엔터키를 입력하세요..");
 			ch = fgetc(stdin);
 		}
